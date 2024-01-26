@@ -29,27 +29,16 @@ jobs:
     - name: Log in to Docker Hub
       run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-    - name: Debug Docker CLI Configuration
-      run: docker info
-
     - name: Tag Docker image
-      run: docker tag quiz-app ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
-
-    - name: Debug Docker Image Tagging
-      run: |
-        echo "Docker Image: ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest"
-        docker images
+      run: docker tag quiz-app ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
 
     - name: Push Docker image to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
-
-    - name: Debug Docker Push
-      run: |
-        echo "Pushed Docker Image: ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest"
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
 
     - name: Deploy to Docker environment
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
+        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
         docker stop quiz-app || true
         docker rm quiz-app || true
-        docker run -d --name quiz-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
+        docker run -d --name quiz-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+

@@ -22,20 +22,22 @@ jobs:
       run: npm install
 
     - name: Build Docker image
-      run: docker build -t quiz:latest .
-
-    - name : Display images
-      run :  docker images
+      run: |
+        docker build -t quiz-app .
+        docker images
 
     - name: Log in to Docker Hub
       run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
+    - name: Tag Docker image
+      run: docker tag quiz-app ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+
     - name: Push Docker image to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:latest
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
 
     - name: Deploy to Docker environment
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz:latest
-        docker stop quiz || true
-        docker rm quiz || true
-        docker run -d --name quiz -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz:latest
+        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+        docker stop quiz-app || true
+        docker rm quiz-app || true
+        docker run -d --name quiz-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest

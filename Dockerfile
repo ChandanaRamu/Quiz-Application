@@ -16,6 +16,7 @@ COPY . .
 # Set environment variable to disable FIPS mode
 ENV NODE_OPTIONS="--openssl-legacy-provider"
 
+# Run NPM Build
 RUN npm run build
 
 # Expose port 3000

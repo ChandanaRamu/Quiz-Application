@@ -1,5 +1,5 @@
 # Use the official Node.js image
-FROM node:latest
+FROM node:14-alpine
 
 # Set the working directory
 WORKDIR /app
@@ -12,9 +12,6 @@ RUN npm install
 
 # Copy the application code to the working directory
 COPY . .
-
-# Set environment variable to disable FIPS mode
-ENV NODE_OPTIONS="--openssl-legacy-provider"
 
 # Run NPM Build
 RUN npm run build

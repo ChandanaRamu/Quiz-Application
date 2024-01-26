@@ -31,8 +31,7 @@ jobs:
 
     - name: Tag Docker image
       run: docker tag quiz ${{ secrets.DOCKER_USERNAME }}/quiz:latest
-      shell : bash
-      
+
     - name: Push Docker image to Docker Hub
       run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:latest
 

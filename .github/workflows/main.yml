@@ -33,7 +33,7 @@ jobs:
       run: docker tag quiz-app quiz-app:latest
 
     - name: Push Docker image to Docker Hub
-      run: docker push quiz-app:latest
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
 
     - name: Deploy to Docker environment
       run: |

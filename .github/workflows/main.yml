@@ -36,7 +36,7 @@ jobs:
       run: docker info
 
     - name: Tag Docker image
-      run: docker tag quiz-app ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+      run: docker tag quiz-app ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
 
     - name: Debug Docker Image Tagging
       run: |
@@ -44,7 +44,7 @@ jobs:
         docker images
 
     - name: Push Docker image to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
 
     - name: Debug Docker Push
       run: |
@@ -52,7 +52,7 @@ jobs:
 
     - name: Deploy to Docker environment
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz-app:version
         docker stop quiz-app || true
         docker rm quiz-app || true
-        docker run -d --name quiz-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz-app:latest
+        docker run -d --name quiz-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz-app:version

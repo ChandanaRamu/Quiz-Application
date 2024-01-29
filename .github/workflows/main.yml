@@ -31,15 +31,17 @@ jobs:
 
     - name: Tag Docker image
       run: | 
-        COMMIT_ID=$(git rev-parse --short ${{ github.sha }})
-        docker tag quiz ${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}
+        export COMMIT_ID=$(git rev-parse --short ${{ github.sha }})
+        docker tag quiz "${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}"
+      env:
+        COMMIT_ID: ${{ github.sha }}
 
     - name: Push Docker image to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}
+      run: docker push "${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}"
 
     - name: Deploy to Docker environment
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}
+        docker pull "${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}"
         docker stop quiz || true
         docker rm quiz || true
-        docker run -d --name quiz -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}
+        docker run -d --name quiz -p 3000:3000 "${{ secrets.DOCKER_USERNAME }}/quiz:${COMMIT_ID}"

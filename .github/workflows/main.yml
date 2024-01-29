@@ -23,7 +23,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t quiz-app .
+        docker build -t quiz .
         docker images
 
     - name: Log in to Docker Hub
@@ -35,15 +35,15 @@ jobs:
             docker --version
 
     - name: Tag Docker image
-      run: docker tag quiz-app ${{ secrets.DOCKER_USERNAME }}/quiz-app:v1.0
+      run: docker tag quiz ${{ secrets.DOCKER_USERNAME }}/quiz:v1.0
 
     - name: Push Docker image to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz-app:v1.0
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:v1.0
 
     - name: Deploy to Docker environment
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz-app:v1.0
-        docker stop quiz-app || true
-        docker rm quiz-app || true
-        docker run -d --name quiz-app -p 3000:3000 quiz-app:v1.0
+        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz:v1.0
+        docker stop quiz || true
+        docker rm quiz || true
+        docker run -d --name quiz -p 3000:3000 quiz:v1.0
 

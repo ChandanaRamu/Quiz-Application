@@ -26,6 +26,6 @@ jobs:
       with:
         context: .
         push: true
-        tags: chandanatippiri123@gmail.com/quiz:latest
+        tags: chandanaramu/quiz:latest
 
 

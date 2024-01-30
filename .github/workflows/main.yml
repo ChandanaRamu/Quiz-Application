@@ -51,17 +51,16 @@ jobs:
     - name: Update ECS task definition with new image
       run: |
         ecs_cluster_name="chandana-devops-task"
-        ecs_service_name="chandana-quiz"
         ecs_task_definition="Task1-chandana-definition"
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
-        aws ecs register-task-definition --cli-input-json file://path/to/existing-task-definition.json \
-          --family $ecs_task_definition \
-          --container-definitions "$(jq '.containerDefinitions[0].image = "${new_image_uri}"' path/to/existing-task-definition.json)"
+        current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
+        updated_container_definition=$(echo $current_task_definition | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri')
+        aws ecs register-task-definition --cli-input-json "$updated_container_definition"
 
     - name: Update ECS service to use the latest task definition
       run: |
         ecs_cluster_name="chandana-devops-task"
         ecs_service_name="chandana-quiz"
         ecs_task_definition="Task1-chandana-definition"
-        updated_task_definition=$(aws ecs register-task-definition --cli-input-json file://path/to/existing-task-definition.json)
+        updated_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
         aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition.taskDefinitionArn --debug

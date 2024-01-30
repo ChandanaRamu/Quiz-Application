@@ -61,22 +61,20 @@ jobs:
         
         # Fetch the current task definition
         current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
-
         # Extract family name from the current task definition
         family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
-
         # Extract container definition details
         container_definitions=$(echo $current_task_definition | jq -r '.taskDefinition.containerDefinitions')
-
         # Create a new container definition with the updated image URI and a default memory value
-        updated_container_definition=$(echo $container_definitions | jq --arg new_image_uri "$new_image_uri" '.[0].image = $new_image_uri | .[0].memory = 256')
-
+        updated_container_definition=$(jq --arg new_image_uri "$new_image_uri" \
+                                  --arg cpu "$cpu" \
+                                  --arg memory "$memory" \
+                                  --argjson compatibilities "$compatibilities" \
+                                  '.[0].image = $new_image_uri | .[0].cpu = $cpu | .[0].memory = $memory | .[0].compatibilities = $compatibilities' <<< $container_definitions)
         # Register the updated task definition as a new revision
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --container-definitions "$updated_container_definition" --query 'taskDefinition')
-
         # Extract the new revision number
         new_revision=$(echo $updated_task_definition | jq -r '.revision')
-
         echo "New revision created: $new_revision"
 
     - name: Update ECS service to use the latest task definition
@@ -84,9 +82,8 @@ jobs:
         ecs_cluster_name="chandana-devops-task"
         ecs_service_name="chandana-quiz"
         ecs_task_definition="Task1-chandana-definition"
-
+    
         # Fetch the latest revision of the task definition
         latest_revision=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.revision' --output text)
-
         # Update ECS service with the latest task definition
         aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition "${ecs_task_definition}:${latest_revision}" --force-new-deployment

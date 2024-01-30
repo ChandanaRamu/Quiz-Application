@@ -39,7 +39,11 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set default.region ${{ secrets.AWS_REGION }}
-  
+          
+    - name: List ECS Clusters
+      run: |
+        ecs_clusters=$(aws ecs describe-clusters --query "clusters[*].clusterName" --output json)
+        echo "ECS Clusters: $ecs_clusters"
     - name: Get current ECS task definition revision
       id: ecs-task-revision
       run: echo "::set-output name=revision::$(aws ecs describe-task-definition --task-definition Task1-chandana-definition --query 'taskDefinition.revision')"

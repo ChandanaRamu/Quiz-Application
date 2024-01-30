@@ -44,17 +44,32 @@ jobs:
     - name: Get current ECS task definition revision
       id: ecs-task-revision
       run: |
+        ecs_cluster_name="chandana-devops-task"
         ecs_task_definition="Task1-chandana-definition"
         echo "::set-output name=revision::$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.revision')"
 
     - name: Update ECS task definition with new image
       run: |
+        ecs_cluster_name="chandana-devops-task"
         ecs_task_definition="Task1-chandana-definition"
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
+
+        # Fetch the current task definition
         current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
-        family=$(echo $current_task_definition | jq -r '.taskDefinition.family')
-        container_definitions=$(echo $current_task_definition | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri' | jq '.taskDefinition.containerDefinitions')
-        aws ecs register-task-definition --family $family --container-definitions "$container_definitions" --cli-input-json "$current_task_definition"
+
+        # Extract family name from the current task definition
+        family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
+
+        # Update the container definition with the new image URI
+        updated_container_definition=$(echo $current_task_definition | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri')
+
+        # Register the updated task definition as a new revision
+        updated_task_definition=$(aws ecs register-task-definition --cli-input-json "$updated_container_definition" --family "$family_name")
+
+        # Extract the new revision number
+        new_revision=$(echo $updated_task_definition | jq -r '.taskDefinition.revision')
+
+        echo "New revision created: $new_revision"
 
     - name: Update ECS service to use the latest task definition
       run: |

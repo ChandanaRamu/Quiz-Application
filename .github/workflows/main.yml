@@ -84,20 +84,9 @@ jobs:
         ecs_cluster_name="chandana-devops-task"
         ecs_service_name="chandana-quiz"
         ecs_task_definition="Task1-chandana-definition"
-    
-        # Fetch the current task definition
-        current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
-    
-        # Extract the launch type from the current task definition
-        launch_type=$(echo $current_task_definition | jq -r '.taskDefinition.requiresCompatibilities[0]')
-      
-        # Use the correct launch type when updating the service
-        if [ "$launch_type" == "FARGATE" ]; then
-          updated_task_definition_arn=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.taskDefinitionArn' --output text)
-          aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --launch-type FARGATE --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678],securityGroups=[sg-12345678],assignPublicIp=ENABLED}" --force-new-deployment --debug
-        else
-          # Update service for EC2 launch type
-          updated_task_definition_arn=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.taskDefinitionArn' --output text)
-          aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --launch-type EC2 --force-new-deployment --debug
-        fi
 
+        # Fetch the latest revision of the task definition
+        latest_revision=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.revision' --output text)
+
+        # Update ECS service with the latest task definition
+        aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition "${ecs_task_definition}:${latest_revision}" --force-new-deployment

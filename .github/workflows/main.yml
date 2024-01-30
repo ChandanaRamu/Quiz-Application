@@ -57,25 +57,28 @@ jobs:
       run: |
         ecs_cluster_name="chandana-devops-task"
         ecs_task_definition="Task1-chandana-definition"
-        new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
-        
+        new_image_uri="***/quiz:090eaf09e6e7197a93758a124ae02ce29e645ad9"
+
         # Fetch the current task definition
         current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
+
         # Extract family name from the current task definition
         family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
+
         # Extract container definition details
-        container_definitions=$(echo $current_task_definition | jq -r '.taskDefinition.containerDefinitions')
+        container_definitions=$(echo $current_task_definition | jq -c '.taskDefinition.containerDefinitions')
+
         # Create a new container definition with the updated image URI and a default memory value
-        updated_container_definition=$(jq --arg new_image_uri "$new_image_uri" \
-                                  --arg cpu "$cpu" \
-                                  --arg memory "$memory" \
-                                  --argjson compatibilities "$compatibilities" \
-                                  '.[0].image = $new_image_uri | .[0].cpu = $cpu | .[0].memory = $memory | .[0].compatibilities = $compatibilities' <<< $container_definitions)
+        updated_container_definition=$(echo $container_definitions | jq --arg new_image_uri "$new_image_uri" \
+                        '.[0].image = $new_image_uri | .[0].cpu = "512" | .[0].memory = "1024"')
+
         # Register the updated task definition as a new revision
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --container-definitions "$updated_container_definition" --query 'taskDefinition')
+
         # Extract the new revision number
         new_revision=$(echo $updated_task_definition | jq -r '.revision')
         echo "New revision created: $new_revision"
+
 
     - name: Update ECS service to use the latest task definition
       run: |

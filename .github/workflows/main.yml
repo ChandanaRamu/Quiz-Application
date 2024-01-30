@@ -34,9 +34,10 @@ jobs:
     - name: Push Docker image to Docker Hub
       run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:${GITHUB_SHA}
 
-    - name: Deploy to Docker environment
+    - name: Get current ECS task definition revision
+      id: ecs-task-revision
+      run: echo "::set-output name=revision::$(aws ecs describe-task-definition --task-definition Task1-chandana-definition --query 'taskDefinition.revision')"
+
+    - name: Update ECS service to use the latest task definition
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/quiz:${GITHUB_SHA}
-        docker stop quiz || true
-        docker rm quiz || true
-        docker run -d --name quiz -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/quiz:${GITHUB_SHA}
+        aws ecs update-service --cluster chandana-quiz-app --service quiz-app --task-definition Task1-chandana-definition:${{ steps.ecs-task-revision.outputs.revision }}

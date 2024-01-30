@@ -40,7 +40,7 @@ jobs:
         aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws configure set default.region ${{ secrets.AWS_REGION }}
-
+        
     - name: Get current ECS task definition revision
       id: ecs-task-revision
       run: |
@@ -53,14 +53,26 @@ jobs:
         ecs_cluster_name="chandana-devops-task"
         ecs_task_definition="Task1-chandana-definition"
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
+        
+        # Fetch the current task definition
         current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
+
+        # Extract family name from the current task definition
         family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
-        # Example value for memory (in MiB)
-        sample_memory_value=256
-        updated_container_definition=$(echo $current_task_definition | jq --arg new_image_uri "$new_image_uri" --argjson sample_memory_value "$sample_memory_value" '.taskDefinition.containerDefinitions[0].image = $new_image_uri | .taskDefinition.containerDefinitions[0].memory = $sample_memory_value')
-        updated_task_definition=$(aws ecs register-task-definition --cli-input-json "$updated_container_definition" --family "$family_name")
-        ecs_service_name="chandana-quiz"
-        aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition.taskDefinitionArn --debug
+
+        # Extract container definition details
+        container_definitions=$(echo $current_task_definition | jq -r '.taskDefinition.containerDefinitions')
+
+        # Create a new container definition with the updated image URI and a default memory value
+        updated_container_definition=$(echo $container_definitions | jq --arg new_image_uri "$new_image_uri" '.[0].image = $new_image_uri | .[0].memory = 256')
+
+        # Register the updated task definition as a new revision
+        updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --container-definitions "$updated_container_definition" --query 'taskDefinition')
+
+        # Extract the new revision number
+        new_revision=$(echo $updated_task_definition | jq -r '.revision')
+
+        echo "New revision created: $new_revision"
 
     - name: Update ECS service to use the latest task definition
       run: |

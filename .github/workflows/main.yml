@@ -53,18 +53,21 @@ jobs:
         ecs_cluster_name="chandana-devops-task"
         ecs_task_definition="Task1-chandana-definition"
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
-
+        
         # Fetch the current task definition
         current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
 
         # Extract family name from the current task definition
         family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
 
-        # Update the container definition with the new image URI
-        updated_container_definition=$(echo $current_task_definition | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri')
+        # Extract container definition details
+        container_definitions=$(echo $current_task_definition | jq -r '.taskDefinition.containerDefinitions')
+
+        # Create a new container definition with the updated image URI
+        updated_container_definition=$(echo $container_definitions | jq --arg new_image_uri "$new_image_uri" '.[0].image = $new_image_uri')
 
         # Register the updated task definition as a new revision
-        updated_task_definition=$(aws ecs register-task-definition --cli-input-json "$updated_container_definition" --family "$family_name")
+        updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --container-definitions "$updated_container_definition")
 
         # Extract the new revision number
         new_revision=$(echo $updated_task_definition | jq -r '.taskDefinition.revision')

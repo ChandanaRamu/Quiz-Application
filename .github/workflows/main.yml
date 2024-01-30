@@ -79,5 +79,5 @@ jobs:
         ecs_cluster_name="chandana-devops-task"
         ecs_service_name="chandana-quiz"
         ecs_task_definition="Task1-chandana-definition"
-        updated_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
-        aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition.taskDefinitionArn --debug
+        updated_task_definition_arn=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.taskDefinitionArn' --output text)
+        aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --debug

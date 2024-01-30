@@ -53,8 +53,8 @@ jobs:
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
         current_task_definition=$(aws ecs describe-task-definition --task-definition $ecs_task_definition)
         family=$(echo $current_task_definition | jq -r '.taskDefinition.family')
-        container_definitions=$(echo $current_task_definition | jq -c --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri')
-        aws ecs register-task-definition --family $family --container-definitions "$container_definitions" --cli-input-json "$container_definitions"
+        container_definitions=$(echo $current_task_definition | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri' | jq '.taskDefinition.containerDefinitions')
+        aws ecs register-task-definition --family $family --container-definitions "$container_definitions" --cli-input-json "$current_task_definition"
 
     - name: Update ECS service to use the latest task definition
       run: |

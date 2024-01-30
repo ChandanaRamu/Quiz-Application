@@ -41,21 +41,27 @@ jobs:
         aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws configure set default.region ${{ secrets.AWS_REGION }}
 
-    - name: List ECS Clusters
-      run: |
-        ecs_clusters=$(aws ecs describe-clusters --query "clusters[*].clusterName" --output json)
-        echo "ECS Clusters: $ecs_clusters"
-
     - name: Get current ECS task definition revision
       id: ecs-task-revision
-      run: echo "::set-output name=revision::$(aws ecs describe-task-definition --task-definition your-ecs-task-definition --query 'taskDefinition.revision')"
+      run: |
+        ecs_cluster_name="chandana-devops-task"
+        ecs_task_definition="Task1-chandana-definition"
+        echo "::set-output name=revision::$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.revision')"
 
-    - name: Update ECS task definition
+    - name: Update ECS task definition with new image
       run: |
         ecs_cluster_name="chandana-devops-task"
         ecs_service_name="chandana-quiz"
         ecs_task_definition="Task1-chandana-definition"
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
-        sed -i "s|<IMAGE_URI>|${new_image_uri}|g" task-definition.json
-        updated_task_definition=$(aws ecs register-task-definition --cli-input-json file://task-definition.json)
+        aws ecs register-task-definition --cli-input-json file://path/to/existing-task-definition.json \
+          --family $ecs_task_definition \
+          --container-definitions "$(jq '.containerDefinitions[0].image = "${new_image_uri}"' path/to/existing-task-definition.json)"
+
+    - name: Update ECS service to use the latest task definition
+      run: |
+        ecs_cluster_name="chandana-devops-task"
+        ecs_service_name="chandana-quiz"
+        ecs_task_definition="Task1-chandana-definition"
+        updated_task_definition=$(aws ecs register-task-definition --cli-input-json file://path/to/existing-task-definition.json)
         aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition.taskDefinitionArn --debug

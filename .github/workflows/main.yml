@@ -44,7 +44,7 @@ jobs:
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
         
         # Extract family name from the current task definition
-        family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
+        family_name=$(echo "$existing_task_definition" | jq -r '.family')
         
         updated_container_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.containerDefinitions[0].image = $new_image_uri' -c)
 

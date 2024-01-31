@@ -41,7 +41,8 @@ jobs:
 
     - name: Get existing ECS task definition
       id: ecs-existing-task-definition
-      run: echo "::set-output name=existing_task_definition::'$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} | jq -c .)'"
+      run: |
+        echo "::set-output name=existing_task_definition::'$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} | jq -c .)'"
 
     - name: Update ECS task definition with new image
       run: |

@@ -28,21 +28,29 @@ jobs:
       run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}
 
     - name: Get existing ECS task definition
-      id: ecs-existing-task-definition
       run: |
-        existing_task_definition=$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} | jq -c .taskDefinition)
+        existing_task_definition=$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} --query 'taskDefinition')
 
     - name: Update ECS task definition with new image
       run: |
-        existing_task_definition="${{ steps.ecs-existing-task-definition.outputs.existing_task_definition }}"
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
+        
+        # Extract family name from the current task definition
+        family_name=$(echo $current_task_definition | jq -r '.taskDefinition.family')
+        
         updated_container_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.containerDefinitions[0].image = $new_image_uri' -c)
-        updated_task_definition=$(aws ecs register-task-definition --family "$(echo "$existing_task_definition" | jq -r '.family')" --container-definitions "$updated_container_definition" --query 'taskDefinition')
 
-    - name: Update ECS service to use the latest task definition
-      run: |
-        ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
-        ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
-        updated_task_definition_arn=$(echo "$updated_task_definition" | jq -r '.taskDefinitionArn')
+        # Register the updated task definition as a new revision
+        updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --container-definitions "$updated_container_definition" --query 'taskDefinition')
+        
+        # Extract the new revision number
+        new_revision=$(echo $updated_task_definition | jq -r '.revision')
+        echo "New revision created: $new_revision"
+
+    #- name: Update ECS service to use the latest task definition
+    #  run: |
+     #   ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
+      #  ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
+       # updated_task_definition_arn=$(echo "$updated_task_definition" | jq -r '.taskDefinitionArn')
         # Update service with the new task definition
-        aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --force-new-deployment
+        #aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --force-new-deployment

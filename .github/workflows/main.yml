@@ -41,7 +41,7 @@ jobs:
 
     - name: Get existing ECS task definition
       id: ecs-existing-task-definition
-      run: echo "::set-output name=existing_task_definition::'$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }})'"
+      run: echo "::set-output name=existing_task_definition::'$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} | jq -c .)'"
 
     - name: Update ECS task definition with new image
       run: |
@@ -50,7 +50,7 @@ jobs:
 
         updated_container_definition=$(echo $existing_task_definition | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri')
 
-        updated_task_definition=$(aws ecs register-task-definition --family "$(echo $existing_task_definition | jq -r '.taskDefinition.family')" --container-definitions "$updated_container_definition" --query 'taskDefinition')
+        updated_task_definition=$(aws ecs register-task-definition --family "$(echo $existing_task_definition | jq -r '.family')" --container-definitions "$updated_container_definition" --query 'taskDefinition')
 
         echo "New revision created: $(echo $updated_task_definition | jq -r '.revision')"
 

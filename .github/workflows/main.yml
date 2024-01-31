@@ -10,55 +10,59 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Build Docker image
-      run: |
-        docker build -t quiz .
-        docker images
+      - name: Build Docker image
+        run: |
+          docker build -t quiz .
+          docker images
 
-    - name: Log in to Docker Hub
-      run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Log in to Docker Hub
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-    - name: Tag Docker image with commit SHA
-      run: docker tag quiz ${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}
+      - name: Tag Docker image with commit SHA
+        run: docker tag quiz ${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}
 
-    - name: Push Docker image to Docker Hub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}
 
-    - name: Update AWS CLI and configure
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y awscli
-        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws configure set default.region ${{ secrets.AWS_REGION }}
+      - name: Update AWS CLI and configure
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.AWS_REGION }}
 
-    - name: Get existing ECS task definition
-      id: ecs-existing-task-definition
-      run: |
-        aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} | jq -c . > existing_task_definition.json
-        echo "::set-output name=existing_task_definition::existing_task_definition.json"
+      - name: Get current ECS task definition revision
+        id: ecs-task-revision
+        run: echo "::set-output name=revision::$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} --query 'taskDefinition.revision')"
 
-    - name: Update ECS task definition with new image
-      run: |
-        existing_task_definition=$(cat existing_task_definition.json)
-        new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
-        updated_container_definition=$(echo $existing_task_definition | jq --arg new_image_uri "$new_image_uri" '.containerDefinitions[0].image = $new_image_uri')
-        updated_task_definition=$(aws ecs register-task-definition --family "$(echo $existing_task_definition | jq -r '.family')" --container-definitions "$updated_container_definition" --query 'taskDefinition')
-        echo "New revision created: $(echo $updated_task_definition | jq -r '.revision')"
+      - name: Get existing ECS task definition
+        id: ecs-existing-task-definition
+        run: |
+          existing_task_definition=$(cat existing_task_definition.json)
+          echo "::set-output name=existing_task_definition::$existing_task_definition"
 
-    - name: Update ECS service to use the latest task definition
-      run: |
-        ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
-        ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
-        ecs_task_definition="${{ secrets.ECS_TASK_DEFINITION }}"
-        current_service_configuration=$(aws ecs describe-services --cluster $ecs_cluster_name --services $ecs_service_name)
-        launch_type=$(echo $current_service_configuration | jq -r '.services[0].launchType')
-        updated_task_definition_arn=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.taskDefinitionArn' --output text)
-        if [ "$launch_type" == "FARGATE" ]; then
-          aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --launch-type FARGATE --force-new-deployment --debug
-        else
-          aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --launch-type EC2 --force-new-deployment --debug
-        fi
+      - name: Update ECS task definition with new image
+        run: |
+          existing_task_definition="${{ steps.ecs-existing-task-definition.outputs.existing_task_definition }}"
+          new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
+          updated_container_definition=$(echo $existing_task_definition | jq --arg new_image_uri "$new_image_uri" '.containerDefinitions[0].image = $new_image_uri')
+          updated_task_definition=$(aws ecs register-task-definition --family "$(echo $existing_task_definition | jq -r '.family')" --container-definitions "$updated_container_definition" --query 'taskDefinition')
+          echo "New revision created: $(echo $updated_task_definition | jq -r '.revision')"
+
+      - name: Update ECS service to use the latest task definition
+        run: |
+          ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
+          ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
+          ecs_task_definition="${{ secrets.ECS_TASK_DEFINITION }}"
+          current_service_configuration=$(aws ecs describe-services --cluster $ecs_cluster_name --services $ecs_service_name)
+          launch_type=$(echo $current_service_configuration | jq -r '.services[0].launchType')
+          updated_task_definition_arn=$(aws ecs describe-task-definition --task-definition $ecs_task_definition --query 'taskDefinition.taskDefinitionArn' --output text)
+          if [ "$launch_type" == "FARGATE" ]; then
+            aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --launch-type FARGATE --force-new-deployment --debug
+          else
+            aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --launch-type EC2 --force-new-deployment --debug
+          fi

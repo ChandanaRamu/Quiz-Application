@@ -59,17 +59,14 @@ jobs:
         updated_task_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri' | jq 'del(.taskDefinition.revision)')
 
         updated_task_definition=$(echo "$updated_task_definition" | jq -c '{
-        family: .taskDefinition.family,
-        executionRoleArn: .taskDefinition.executionRoleArn,
-        executionRoleArn: .taskDefinition.executionRoleArn,
-        networkMode: .taskDefinition.networkMode,
-        containerDefinitions: .taskDefinition.containerDefinitions,
-        volumes: .taskDefinition.volumes,
-        placementConstraints: .taskDefinition.placementConstraints,
-        requiresCompatibilities: .taskDefinition.requiresCompatibilities,
-        cpu: .taskDefinition.cpu,
-        memory: .taskDefinition.memory 
-        }')  
+          family: .taskDefinition.family,
+          executionRoleArn: .taskDefinition.executionRoleArn,
+          networkMode: .taskDefinition.networkMode,
+          containerDefinitions: .taskDefinition.containerDefinitions,
+          volumes: .taskDefinition.volumes,
+          placementConstraints: .taskDefinition.placementConstraints,
+          requiresCompatibilities: .taskDefinition.requiresCompatibilities
+        }')
        
         # Register the updated task definition as a new revision
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --cli-input-json "$updated_task_definition")

@@ -37,8 +37,8 @@ jobs:
 
     - name: Get existing ECS task definition
       run: |
-        existing_task_definition=$(aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION }} --query 'taskDefinition')
-
+        existing_task_definition=$(aws ecs describe-task-definition --task-definition Task1-chandana-definition --output json)
+        
     - name: Update ECS task definition with new image
       run: |
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"

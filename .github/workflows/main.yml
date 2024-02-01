@@ -45,11 +45,27 @@ jobs:
         
         # Extract family name from the current task definition
         family_name=$(echo "$existing_task_definition" | jq -r '.family')
-        
-        updated_container_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.containerDefinitions[0].image = $new_image_uri' -c)
+
+        # Update the image field in the container definition
+        updated_task_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri' | jq 'del(.taskDefinition.revision)')
+
+
+        updated_task_definition=$(echo "$updated_container_definition" | jq -c '{
+            family: .taskDefinition.family,
+            taskRoleArn: .taskDefinition.taskRoleArn,
+            executionRoleArn: .taskDefinition.executionRoleArn,
+            networkMode: .taskDefinition.networkMode,
+            containerDefinitions: .taskDefinition.containerDefinitions,
+            volumes: .taskDefinition.volumes,
+            placementConstraints: .taskDefinition.placementConstraints,
+            requiresCompatibilities: .taskDefinition.requiresCompatibilities,
+            cpu: .taskDefinition.cpu,
+            memory: .taskDefinition.memory,
+            tags: .taskDefinition.tags
+        }')
 
         # Register the updated task definition as a new revision
-        updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --container-definitions "$updated_container_definition" --query 'taskDefinition')
+        updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --cli-input-json "$updated_task_definition")
         
         # Extract the new revision number
         new_revision=$(echo $updated_task_definition | jq -r '.revision')

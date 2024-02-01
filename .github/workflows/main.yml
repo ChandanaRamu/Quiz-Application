@@ -48,6 +48,12 @@ jobs:
         echo $family_name
 
         # Update the image field in the container definition
+        #updated_task_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri' | jq 'del(.taskDefinition.revision)')
+        # Before modification
+        echo "Before Modification:"
+        echo "$existing_task_definition"
+
+        # Update the image field in the container definition
         updated_task_definition=$(echo "$existing_task_definition" | jq --arg new_image_uri "$new_image_uri" '.taskDefinition.containerDefinitions[0].image = $new_image_uri' | jq 'del(.taskDefinition.revision)')
 
 
@@ -62,7 +68,11 @@ jobs:
         requiresCompatibilities: .taskDefinition.requiresCompatibilities,
         cpu: .taskDefinition.cpu,
         memory: .taskDefinition.memory 
-        }')                         
+        }')  
+
+        # After modification
+        echo "After Modification:"
+        echo "$updated_task_definition"
 
         # Register the updated task definition as a new revision
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --cli-input-json "$updated_task_definition")

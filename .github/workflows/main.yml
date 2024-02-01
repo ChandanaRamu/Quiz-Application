@@ -36,7 +36,7 @@ jobs:
       run: |
         ecs_task_definition="${{ secrets.ECS_TASK_DEFINITION }}"
         # Extract the existing ECS task definition form AWS
-        existing_task_definition=$(aws ecs describe-task-definition --task-definition ecs_task_definition --output json)
+        existing_task_definition=$(aws ecs describe-task-definition --task-definition "$ecs_task_definition" --output json)
 
         # New image URI
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
@@ -69,4 +69,4 @@ jobs:
         ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
         ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
         ecs_task_definition="${{ secrets.ECS_TASK_DEFINITION }}"
-        aws ecs update-service --cluster ecs_cluster_name --service ecs_service_name --task-definition ecs_task_definition
+        aws ecs update-service --cluster "$ecs_cluster_name" --service "$ecs_service_name" --task-definition "$ecs_task_definition"

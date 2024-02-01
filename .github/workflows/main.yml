@@ -65,7 +65,9 @@ jobs:
           containerDefinitions: .taskDefinition.containerDefinitions,
           volumes: .taskDefinition.volumes,
           placementConstraints: .taskDefinition.placementConstraints,
-          requiresCompatibilities: .taskDefinition.requiresCompatibilities
+          requiresCompatibilities: .taskDefinition.requiresCompatibilities,
+          cpu: .taskDefinition.cpu,
+          memory: .taskDefinition.memory 
         }')
        
         # Register the updated task definition as a new revision

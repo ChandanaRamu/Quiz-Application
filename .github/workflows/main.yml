@@ -35,16 +35,14 @@ jobs:
         aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws configure set default.region ${{ secrets.AWS_REGION }}
 
-    - name: Get existing ECS task definition
+    - name: Get existing ECS task definition and Update ECS task definition with new image
       run: |
         existing_task_definition=$(aws ecs describe-task-definition --task-definition Task1-chandana-definition --output json)
-        
-    - name: Update ECS task definition with new image
-      run: |
+      
         new_image_uri="${{ secrets.DOCKER_USERNAME }}/quiz:${{ github.sha }}"
         
         # Extract family name from the current task definition
-        family_name=$(echo "$existing_task_definition" | jq -r '.family')
+        family_name=$(echo "$existing_task_definition" | jq -r '.taskDefinition.family')
         echo $family_name
 
         # Update the image field in the container definition
@@ -78,7 +76,7 @@ jobs:
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --cli-input-json "$updated_task_definition")
         
         # Extract the new revision number
-        new_revision=$(echo $updated_task_definition | jq -r '.revision')
+        new_revision=$(echo $updated_task_definition | jq -r '.taskDefinition.revision')
         echo "New revision created: $new_revision"
 
     #- name: Update ECS service to use the latest task definition

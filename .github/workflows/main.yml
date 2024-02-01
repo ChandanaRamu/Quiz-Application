@@ -56,20 +56,6 @@ jobs:
          # After modification
         echo "After Modification:"
         echo "$updated_task_definition"
-
-
-        updated_task_definition=$(echo "$updated_task_definition" | jq -c '{
-        family: .taskDefinition.family,
-        executionRoleArn: .taskDefinition.executionRoleArn,
-        executionRoleArn: .taskDefinition.executionRoleArn,
-        networkMode: .taskDefinition.networkMode,
-        containerDefinitions: .taskDefinition.containerDefinitions,
-        volumes: .taskDefinition.volumes,
-        placementConstraints: .taskDefinition.placementConstraints,
-        requiresCompatibilities: .taskDefinition.requiresCompatibilities,
-        cpu: .taskDefinition.cpu,
-        memory: .taskDefinition.memory 
-        }')  
        
         # Register the updated task definition as a new revision
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --cli-input-json "$updated_task_definition")

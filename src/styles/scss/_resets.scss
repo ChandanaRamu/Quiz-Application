@@ -1,7 +1,7 @@
 @import "./variables";
 
 $mobile-image: "./../../images/hand_mobile.jpg";
-$pc-image: "./../../images/image.jpeg";
+$pc-image: "./../../images/hand.jpg";
 
 @mixin backgroundChange($device) {
   @if ($device == "mobile") {

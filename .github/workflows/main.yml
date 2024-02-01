@@ -73,15 +73,11 @@ jobs:
        
         # Register the updated task definition as a new revision
         updated_task_definition=$(aws ecs register-task-definition --family "$family_name" --cli-input-json "$updated_task_definition")
-        
-        # Extract the new revision number
-        new_revision=$(echo $updated_task_definition | jq -r '.taskDefinition.revision')
-        echo "New revision created: $new_revision"
 
-    #- name: Update ECS service to use the latest task definition
-    #  run: |
-     #   ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
-      #  ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
-       # updated_task_definition_arn=$(echo "$updated_task_definition" | jq -r '.taskDefinitionArn')
+    - name: Update ECS service to use the latest task definition
+      run: |
+        ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
+        ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
+        aws ecs update-service --cluster chandana-devops-task --service chandana-quiz --task-definition Task1-chandana-definition
         # Update service with the new task definition
         #aws ecs update-service --cluster $ecs_cluster_name --service $ecs_service_name --task-definition $updated_task_definition_arn --force-new-deployment

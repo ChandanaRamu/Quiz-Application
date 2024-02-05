@@ -119,7 +119,7 @@ jobs:
           for job_name in "build-and-push" "deploy" "health-check"; do
             job_status=$(curl -s -X GET -H "Authorization: Bearer $GITHUB_TOKEN" \
               "https://api.github.com/repos/${repository}/actions/runs/${{ github.run_id }}/jobs" \
-              | jq -r ".jobs | map(select(.name == \"${job_name}\")) | first?.conclusion // empty")
+              | jq -r ".jobs | map(select(.name == \"${job_name}\")) |  (.conclusion // empty)")
       
             if [ -z "$job_status" ]; then
               jobs_status="${jobs_status}❓ Job '${job_name}' status unknown\n"

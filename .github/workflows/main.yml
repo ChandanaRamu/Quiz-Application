@@ -81,26 +81,23 @@ jobs:
         aws ecs update-service --cluster "$ecs_cluster_name" --service "$ecs_service_name" --task-definition "$ecs_task_definition"
   health-check:
     runs-on: ubuntu-latest
-
     needs: deploy
-
     steps:
-    - name: Debug AWS CLI Configuration
-      run: |
-        aws configure list
+      - name: Use AWS CLI configured in deploy
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Wait for service to stabilize
+        run: |
+          ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
+          ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
+          max_retries=30
+          wait_interval=10
 
-    - name: Display Environment Variables
-      run: env
-
-    - name: Wait for service to stabilize
-      run: |
-        ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
-        ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
-        max_retries=30
-        wait_interval=10
-
-        for ((i=1; i<=$max_retries; i++)); do
-          service_status=$(aws ecs describe-services --cluster "$ecs_cluster_name" --services "$ecs_service_name" --query 'services[0].status' --output text)
+          for ((i=1; i<=$max_retries; i++)); do
+            service_status=$(aws ecs describe-services --cluster "$ecs_cluster_name" --services "$ecs_service_name" --query 'services[0].status' --output text)
         
           if [ "$service_status" == "ACTIVE" ]; then
             echo "Service is up and running."
@@ -109,7 +106,7 @@ jobs:
 
           echo "Service is not yet stable. Retrying in $wait_interval seconds (Attempt $i/$max_retries)..."
           sleep $wait_interval
-        done
+          done
 
-        echo "Service did not stabilize within the expected time."
-        exit 1
+          echo "Service did not stabilize within the expected time."
+          exit 1

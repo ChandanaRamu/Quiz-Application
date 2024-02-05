@@ -85,6 +85,13 @@ jobs:
     needs: deploy
 
     steps:
+    - name: Debug AWS CLI Configuration
+      run: |
+        aws configure list
+
+    - name: Display Environment Variables
+      run: env
+
     - name: Wait for service to stabilize
       run: |
         ecs_cluster_name="${{ secrets.ECS_CLUSTER_NAME }}"
@@ -94,7 +101,7 @@ jobs:
 
         for ((i=1; i<=$max_retries; i++)); do
           service_status=$(aws ecs describe-services --cluster "$ecs_cluster_name" --services "$ecs_service_name" --query 'services[0].status' --output text)
-          
+        
           if [ "$service_status" == "ACTIVE" ]; then
             echo "Service is up and running."
             exit 0

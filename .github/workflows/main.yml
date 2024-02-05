@@ -23,7 +23,6 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
-    needs: aws-cli-setup
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -47,6 +46,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        
+      - name: Debug AWS CLI Configuration
+        run: aws configure list
 
       - name: Get existing ECS task definition and Update ECS task definition with new image
         run: |

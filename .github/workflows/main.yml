@@ -124,9 +124,6 @@ jobs:
           echo "GitHub Token: $GITHUB_TOKEN"
           api_response=$(curl -s -X GET -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${repository}/actions/runs/${{ github.run_id }}/jobs")
-
-          echo "API Response: $api_response"
-
           for job_name in "build-and-push" "deploy" "health-check"; do
               job_status=$(echo "$api_response" | jq -r ".jobs[] | select(.name == \"${job_name}\") | .conclusion // empty")
 

@@ -75,7 +75,7 @@ jobs:
         ecs_service_name="${{ secrets.ECS_SERVICE_NAME }}"
         ecs_task_definition="${{ secrets.ECS_TASK_DEFINITION }}"
         aws ecs update-service --cluster "$ecs_cluster_name" --service "$ecs_service_name" --task-definition "$ecs_task_definition"
-  health_check-and-Notification:
+  health-check:
     runs-on: ubuntu-latest
     needs: deploy
     steps:
@@ -103,6 +103,11 @@ jobs:
           done
           echo "Service did not stabilize within the expected time."
           exit 1
+  Notification :
+    runs-on: ubuntu-latest
+    needs: health-check
+    steps:
+  
       - name: Notify via SNS on job completion
         run: |
           topic_arn="${{ secrets.SNS_TOPIC_ARN }}"
@@ -110,17 +115,19 @@ jobs:
           sender_email="${{ secrets.SENDER_EMAIL }}"
 
           jobs_status=$(echo "Job status for workflow run: ${{ github.run_id }}\n")
-    
-          for job_name in "build-and-push" "deploy"; do
-          job_status=$(curl -s -X GET -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${repository}/actions/jobs/${{ github.run_id }}/jobs" \
-            | jq -r ".jobs[] | select(.name == \"${job_name}\") | .conclusion")
+
+          for job_name in "build-and-push" "deploy" health-check; do
+            job_status=$(curl -s -X GET -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${repository}/actions/runs/${{ github.run_id }}/jobs" \
+              | jq -r ".jobs[] | select(.name == \"${job_name}\") | .conclusion // empty")
       
-          if [ "$job_status" == "success" ]; then
-            jobs_status="${jobs_status}✅ Job '${job_name}' passed\n"
-          else
-            jobs_status="${jobs_status}❌ Job '${job_name}' failed\n"
-          fi
+            if [ -z "$job_status" ]; then
+              jobs_status="${jobs_status}❓ Job '${job_name}' status unknown\n"
+            elif [ "$job_status" == "success" ]; then
+              jobs_status="${jobs_status}✅ Job '${job_name}' passed\n"
+            else
+              jobs_status="${jobs_status}❌ Job '${job_name}' failed\n"
+            fi
           done
 
           subject="Quiz Application CI/CD Pipeline Notification"

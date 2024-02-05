@@ -137,6 +137,10 @@ jobs:
           done
 
           subject="Quiz Application CI/CD Pipeline Notification"
-          message="${jobs_status}$'\n'Repository: ${repository}$'\n'Workflow Run ID: ${{ github.run_id }}"
-
+          message=$(cat <<-EOF
+          ${jobs_status}
+          Repository: ${repository}
+          Workflow Run ID: ${{ github.run_id }}
+          EOF
+          )
           aws sns publish --topic-arn "$topic_arn" --message "$message" --subject "$subject" --message-attributes "{\"email\":{\"DataType\":\"String\",\"StringValue\":\"$sender_email\"}}"

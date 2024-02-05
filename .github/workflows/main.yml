@@ -128,15 +128,15 @@ jobs:
               job_status=$(echo "$api_response" | jq -r ".jobs[] | select(.name == \"${job_name}\") | .conclusion // empty")
 
               if [ -z "$job_status" ]; then
-                  jobs_status="${jobs_status}❓ Job '${job_name}' status unknown\n"
+                  jobs_status="${jobs_status}❓ Job '${job_name}' status unknown"$'\n'
               elif [ "$job_status" == "success" ]; then
-                  jobs_status="${jobs_status}✅ Job '${job_name}' passed\n"
+                  jobs_status="${jobs_status}✅ Job '${job_name}' passed"$'\n'
               else
-                  jobs_status="${jobs_status}❌ Job '${job_name}' failed\n"
+                  jobs_status="${jobs_status}❌ Job '${job_name}' failed"$'\n'
                fi
           done
 
           subject="Quiz Application CI/CD Pipeline Notification"
-          message="${jobs_status}\nRepository: ${repository}\nWorkflow Run ID: ${{ github.run_id }}"
+          message="${jobs_status}$'\n'Repository: ${repository}$'\n'Workflow Run ID: ${{ github.run_id }}"
 
           aws sns publish --topic-arn "$topic_arn" --message "$message" --subject "$subject" --message-attributes "{\"email\":{\"DataType\":\"String\",\"StringValue\":\"$sender_email\"}}"

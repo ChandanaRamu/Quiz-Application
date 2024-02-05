@@ -120,7 +120,7 @@ jobs:
           repository="${{ github.repository }}"
           sender_email="${{ secrets.SENDER_EMAIL }}"
           GITHUB_TOKEN="${{ secrets.TOKEN }}"
-          jobs_status=$(echo "Job status for workflow run: ${{ github.run_id }}\n")
+          jobs_status=$(echo "Job status for workflow run: ${{ github.run_id }}"$'\n')
           echo "GitHub Token: $GITHUB_TOKEN"
           api_response=$(curl -s -X GET -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${repository}/actions/runs/${{ github.run_id }}/jobs")
